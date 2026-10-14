@@ -48,9 +48,12 @@ export default function Home() {
         data={groups}
         keyExtractor={(g) => g.id}
         renderItem={({ item }) => (
-          <Text style={{ fontSize: 18, paddingVertical: 6 }}>
+          <Link
+            href={`/groups/${item.id}`}
+            style={{ fontSize: 18, paddingVertical: 6 }}
+          >
             {item.name} <Text style={{ color: "#888" }}>· {item.template}</Text>
-          </Text>
+          </Link>
         )}
         ListEmptyComponent={
           <Text style={{ color: "#888" }}>No groups yet</Text>
@@ -59,6 +62,9 @@ export default function Home() {
       />
       <Link href="/groups/new" style={{ color: "#06c", fontSize: 16 }}>
         + New group
+      </Link>
+      <Link href="/join" style={{ color: "#06c", fontSize: 16 }}>
+        Join with a code
       </Link>
     </View>
   );

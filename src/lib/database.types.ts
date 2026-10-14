@@ -66,6 +66,13 @@ export type Database = {
             referencedRelation: "groups"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "group_members_profile_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       group_modules: {
@@ -124,6 +131,41 @@ export type Database = {
         }
         Relationships: []
       }
+      invites: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          group_id: string
+          id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          group_id: string
+          id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -157,6 +199,17 @@ export type Database = {
         Args: { p_name: string; p_template: string }
         Returns: string
       }
+      create_invite: { Args: { p_group_id: string }; Returns: string }
+      get_invite: {
+        Args: { p_code: string }
+        Returns: {
+          already_member: boolean
+          group_id: string
+          group_name: string
+          template: string
+        }[]
+      }
+      join_group: { Args: { p_code: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
