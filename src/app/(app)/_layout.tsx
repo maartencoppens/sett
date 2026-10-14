@@ -5,6 +5,10 @@ export default function AppLayout() {
     <Stack>
       <Stack.Screen name="index" options={{ title: "Sett" }} />
       <Stack.Screen name="profile" options={{ title: "Profile" }} />
+      <Stack.Screen
+        name="groups/new"
+        options={{ title: "New group", presentation: "modal" }}
+      />
     </Stack>
   );
 }
