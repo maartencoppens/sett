@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 import { AppState, Platform } from "react-native";
+import type { Database } from "./database.types";
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -11,7 +12,7 @@ if (!url || !key) {
   );
 }
 
-export const supabase = createClient(url, key, {
+export const supabase = createClient<Database>(url, key, {
   auth: {
     storage: AsyncStorage, // no cookies on mobile: the session lives on the device
     autoRefreshToken: true,
