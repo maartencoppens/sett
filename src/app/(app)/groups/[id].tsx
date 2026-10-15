@@ -211,7 +211,7 @@ export default function GroupDetail() {
                 {item.profiles.instruments.join(", ")}
               </ThemedText>
             )}
-          </View>{" "}
+          </View>
         </View>
       ))}
 
