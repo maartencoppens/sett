@@ -1,11 +1,17 @@
+import { AttendanceSection } from "@/components/events/attendance-section";
+import { BringItemsSection } from "@/components/events/bring-items-section";
+import { GigSchedule } from "@/components/events/gig-schedule";
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { ThemedText } from "@/components/ui/themed-text";
-import { combine, todayAt } from "@/lib/utils/dates";
 import { eventTypeLabel, formatRange, overlaps } from "@/lib/features/events";
+import { useGroupModules } from "@/lib/hooks/use-group-modules";
 import { useSession } from "@/lib/providers/session";
 import { useTheme, type Theme } from "@/lib/providers/theme";
 import { supabase } from "@/lib/supabase/client";
+import type { Tables } from "@/lib/supabase/database.types";
+import { combine, todayAt } from "@/lib/utils/dates";
+import { openInMaps } from "@/lib/utils/maps";
 import type { QueryData } from "@supabase/supabase-js";
 import {
   Stack,
@@ -40,18 +46,6 @@ const membersQuery = (groupId: string) =>
 
 type Options = QueryData<ReturnType<typeof optionsQuery>>;
 type Members = QueryData<ReturnType<typeof membersQuery>>;
-type EventRow = {
-  id: string;
-  group_id: string;
-  type: string;
-  status: string;
-  title: string | null;
-  notes: string | null;
-  starts_at: string | null;
-  ends_at: string | null;
-  confirmed_option_id: string | null;
-  created_by: string | null;
-};
 type Busy = { user_id: string; starts_at: string; ends_at: string };
 
 export default function EventScreen() {
@@ -61,13 +55,14 @@ export default function EventScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [event, setEvent] = useState<EventRow | null>(null);
+  const [event, setEvent] = useState<Tables<"events"> | null>(null);
   const [options, setOptions] = useState<Options>([]);
   const [members, setMembers] = useState<Members>([]);
   const [busy, setBusy] = useState<Busy[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // tells child sections to reload
+  const modules = useGroupModules(event?.group_id, refreshKey);
 
-  // suggest-another-time form
   const [suggesting, setSuggesting] = useState(false);
   const [sDate, setSDate] = useState(new Date());
   const [sStart, setSStart] = useState(todayAt(19));
@@ -90,7 +85,6 @@ export default function EventScreen() {
     setOptions(opts ?? []);
     setMembers(mems ?? []);
 
-    // Busy times only matter while planning, and group_busy allows at most 62 days
     if (ev.status === "proposed" && opts?.length) {
       const from = opts[0].starts_at;
       const to = opts.reduce(
@@ -108,6 +102,7 @@ export default function EventScreen() {
         setBusy(data ?? []);
       }
     }
+    setRefreshKey((k) => k + 1);
   }, [id]);
 
   useFocusEffect(
@@ -129,6 +124,13 @@ export default function EventScreen() {
   const nameOf = (userId: string) =>
     members.find((m) => m.user_id === userId)?.profiles?.display_name ??
     "Someone";
+
+  const confirmedOption = options.find(
+    (o) => o.id === event.confirmed_option_id,
+  );
+  const requestAnswers = new Map(
+    confirmedOption?.event_responses.map((r) => [r.user_id, r.response]) ?? [],
+  );
 
   async function answer(
     optionId: string,
@@ -211,11 +213,12 @@ export default function EventScreen() {
     load();
   }
 
-  const heading = event.title ?? eventTypeLabel(event.type);
+  const place = [event.venue, event.address].filter(Boolean).join(", ");
 
   return (
     <ScrollView
       contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -224,10 +227,29 @@ export default function EventScreen() {
         />
       }
     >
-      <Stack.Screen options={{ title: eventTypeLabel(event.type) }} />
+      <Stack.Screen
+        options={{
+          title: eventTypeLabel(event.type),
+          headerRight:
+            canManage && event.status !== "cancelled"
+              ? () => (
+                  <Pressable
+                    onPress={() => router.push(`/events/${id}/edit`)}
+                    accessibilityRole="button"
+                  >
+                    <ThemedText style={{ color: colors.accent }}>
+                      Edit
+                    </ThemedText>
+                  </Pressable>
+                )
+              : undefined,
+        }}
+      />
 
       <View style={{ gap: 4 }}>
-        <ThemedText style={styles.heading}>{heading}</ThemedText>
+        <ThemedText style={styles.heading}>
+          {event.title ?? eventTypeLabel(event.type)}
+        </ThemedText>
         <ThemedText muted>
           {event.status === "proposed" &&
             "Proposed · pick the dates you can make"}
@@ -237,11 +259,40 @@ export default function EventScreen() {
             formatRange(event.starts_at, event.ends_at)}
           {event.status === "cancelled" && "Cancelled"}
         </ThemedText>
-        {!!event.notes && (
-          <ThemedText style={{ marginTop: 8 }}>{event.notes}</ThemedText>
-        )}
       </View>
 
+      {/* Gig times */}
+      {event.status === "confirmed" &&
+        event.type === "gig" &&
+        modules.has("gig_details") &&
+        event.starts_at &&
+        event.ends_at && (
+          <GigSchedule
+            loadInAt={event.load_in_at}
+            soundcheckAt={event.soundcheck_at}
+            startsAt={event.starts_at}
+            endsAt={event.ends_at}
+          />
+        )}
+
+      {/* Venue */}
+      {!!place && (
+        <View style={styles.card}>
+          {!!event.venue && (
+            <ThemedText style={{ fontWeight: "600" }}>{event.venue}</ThemedText>
+          )}
+          {!!event.address && <ThemedText muted>{event.address}</ThemedText>}
+          <Button
+            title="Open in maps"
+            variant="secondary"
+            onPress={() => openInMaps(place)}
+          />
+        </View>
+      )}
+
+      {!!event.notes && <ThemedText>{event.notes}</ThemedText>}
+
+      {/* Planning: date options (unchanged from last step) */}
       {event.status === "proposed" &&
         options.map((option) => {
           const answers = new Map(
@@ -281,14 +332,12 @@ export default function EventScreen() {
                   <ThemedText style={styles.badge}>Everyone's in</ThemedText>
                 )}
               </View>
-
               {option.suggested_by &&
                 option.suggested_by !== event.created_by && (
                   <ThemedText muted style={styles.small}>
                     Suggested by {nameOf(option.suggested_by)}
                   </ThemedText>
                 )}
-
               <ThemedText style={styles.small}>
                 ✓{" "}
                 {yes.length
@@ -311,7 +360,6 @@ export default function EventScreen() {
                     .join(", ")}
                 </ThemedText>
               )}
-
               <View style={styles.answerRow}>
                 {(["accept", "decline"] as const).map((response) => {
                   const selected = mine === response;
@@ -336,7 +384,6 @@ export default function EventScreen() {
                   );
                 })}
               </View>
-
               {canManage && (
                 <Button
                   title="Confirm this date"
@@ -388,6 +435,26 @@ export default function EventScreen() {
           />
         ))}
 
+      {/* Confirmed: attendance */}
+      {event.status === "confirmed" && (
+        <AttendanceSection
+          eventId={id}
+          members={members}
+          requestAnswers={requestAnswers}
+          refreshKey={refreshKey}
+        />
+      )}
+
+      {/* Who brings what (module) */}
+      {event.status !== "cancelled" && modules.has("bring_items") && (
+        <BringItemsSection
+          eventId={id}
+          members={members}
+          canManage={canManage}
+          refreshKey={refreshKey}
+        />
+      )}
+
       {canManage && event.status !== "cancelled" && (
         <Button
           title={
@@ -403,7 +470,7 @@ export default function EventScreen() {
 
 const createStyles = (colors: Theme["colors"]) =>
   StyleSheet.create({
-    container: { padding: 24, gap: 16 },
+    container: { padding: 24, gap: 20 },
     heading: { fontSize: 26, fontWeight: "700" },
     card: {
       backgroundColor: colors.surface,

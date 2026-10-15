@@ -1,8 +1,10 @@
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
-import { ACCENT_KEYS, PALETTE, type AccentKey } from "@/constants/palette";
+import { type AccentKey } from "@/constants/palette";
 import { pickSquareImage, uploadImage } from "@/lib/features/images";
+import { MODULES } from "@/lib/features/modules";
+import { useGroupModules } from "@/lib/hooks/use-group-modules";
 import { useActiveGroup } from "@/lib/providers/active-group";
 import { useSession } from "@/lib/providers/session";
 import { useTheme, type Theme } from "@/lib/providers/theme";
@@ -19,10 +21,11 @@ import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
+  ScrollView,
   Share,
   StyleSheet,
+  Switch,
   View,
 } from "react-native";
 
@@ -48,7 +51,22 @@ export default function GroupDetail() {
 
   const [logoPath, setLogoPath] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [modulesKey, setModulesKey] = useState(0);
+  const modules = useGroupModules(id, modulesKey);
 
+  async function toggleModule(key: string, on: boolean) {
+    const { error } = on
+      ? await supabase
+          .from("group_modules")
+          .insert({ group_id: id, module: key })
+      : await supabase
+          .from("group_modules")
+          .delete()
+          .eq("group_id", id)
+          .eq("module", key);
+    if (error) return Alert.alert("Could not update", error.message);
+    setModulesKey((k) => k + 1);
+  }
   useFocusEffect(
     useCallback(() => {
       supabase
@@ -146,7 +164,7 @@ export default function GroupDetail() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Stack.Screen options={{ title: name || "Group" }} />
       <View style={{ alignItems: "center", gap: 10 }}>
         <Avatar bucket="group-logos" path={logoPath} name={name} size={88} />
@@ -169,73 +187,72 @@ export default function GroupDetail() {
       <ThemedText muted style={styles.label}>
         Members
       </ThemedText>
-      <FlatList
-        data={members}
-        keyExtractor={(m) => m.user_id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.member,
-              { flexDirection: "row", alignItems: "center", gap: 12 },
-            ]}
-          >
-            <Avatar
-              bucket="avatars"
-              path={item.profiles?.avatar_path}
-              name={item.profiles?.display_name}
-            />
-            <View style={{ flex: 1 }}>
-              <ThemedText style={styles.memberName}>
-                {item.profiles?.display_name ?? "Unnamed"}
-                {item.role === "admin" && (
-                  <ThemedText muted> · admin</ThemedText>
-                )}
+      {members.map((item) => (
+        <View
+          key={item.user_id}
+          style={[
+            styles.member,
+            { flexDirection: "row", alignItems: "center", gap: 12 },
+          ]}
+        >
+          <Avatar
+            bucket="avatars"
+            path={item.profiles?.avatar_path}
+            name={item.profiles?.display_name}
+          />
+          <View style={{ flex: 1 }}>
+            <ThemedText style={styles.memberName}>
+              {item.profiles?.display_name ?? "Unnamed"}
+              {item.role === "admin" && <ThemedText muted> · admin</ThemedText>}
+            </ThemedText>
+            {!!item.profiles?.instruments.length && (
+              <ThemedText muted>
+                {item.profiles.instruments.join(", ")}
               </ThemedText>
-              {!!item.profiles?.instruments.length && (
-                <ThemedText muted>
-                  {item.profiles.instruments.join(", ")}
-                </ThemedText>
-              )}
-            </View>
-          </View>
-        )}
-        style={{ flexGrow: 0 }}
-      />
+            )}
+          </View>{" "}
+        </View>
+      ))}
 
       {isAdmin && (
-        <>
+        <View style={{ gap: 4 }}>
           <ThemedText muted style={styles.label}>
-            Group colour
+            Features
           </ThemedText>
-          <View style={styles.swatches}>
-            {ACCENT_KEYS.map((key) => (
-              <Pressable
-                key={key}
-                onPress={() => pickAccent(key)}
-                accessibilityRole="radio"
-                accessibilityLabel={PALETTE[key].label}
-                accessibilityState={{ selected: accent === key }}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: PALETTE[key][scheme] },
-                  accent === key && styles.swatchSelected,
-                ]}
+          {MODULES.map((m) => (
+            <View
+              key={m.key}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                paddingVertical: 8,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <ThemedText>{m.label}</ThemedText>
+                <ThemedText muted style={{ fontSize: 13 }}>
+                  {m.description}
+                </ThemedText>
+              </View>
+              <Switch
+                value={modules.has(m.key)}
+                onValueChange={(on) => toggleModule(m.key, on)}
+                trackColor={{ true: colors.accent }}
               />
-            ))}
-          </View>
-
-          <Button title="Invite someone" onPress={invite} />
-        </>
+            </View>
+          ))}
+        </View>
       )}
 
       <Button title="Leave group" variant="danger" onPress={leave} />
-    </View>
+    </ScrollView>
   );
 }
 
 const createStyles = (colors: Theme["colors"]) =>
   StyleSheet.create({
-    container: { flex: 1, padding: 24, gap: 16 },
+    container: { padding: 24, gap: 16 },
     label: { fontSize: 14, fontWeight: "600" },
     member: {
       paddingVertical: 8,

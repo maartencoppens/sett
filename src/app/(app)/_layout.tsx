@@ -41,7 +41,11 @@ export default function AppLayout() {
         name="events/new"
         options={{ title: "New request", presentation: "modal" }}
       />
-      <Stack.Screen name="events/[id]" options={{ title: "Event" }} />
+      <Stack.Screen name="events/[id]/index" options={{ title: "Event" }} />
+      <Stack.Screen
+        name="events/[id]/edit"
+        options={{ title: "Edit event", presentation: "modal" }}
+      />
     </Stack>
   );
 }
