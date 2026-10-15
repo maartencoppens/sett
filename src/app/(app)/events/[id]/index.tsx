@@ -7,6 +7,7 @@ import { ThemedText } from "@/components/ui/themed-text";
 import { syncDeviceCalendars } from "@/lib/features/device-calendar";
 import { eventTypeLabel, formatRange, overlaps } from "@/lib/features/events";
 import { useGroupModules } from "@/lib/hooks/use-group-modules";
+import { useGroupChanges } from "@/lib/providers/realtime";
 import { useSession } from "@/lib/providers/session";
 import { useTheme, type Theme } from "@/lib/providers/theme";
 import { supabase } from "@/lib/supabase/client";
@@ -111,7 +112,14 @@ export default function EventScreen() {
       load();
     }, [load]),
   );
-
+  useGroupChanges(
+    (change) =>
+      change.group_id === event?.group_id &&
+      (change.event_id === id ||
+        change.table === "group_members" ||
+        change.table === "*"),
+    load,
+  );
   async function refresh() {
     setRefreshing(true);
     await load();

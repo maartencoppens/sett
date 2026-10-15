@@ -3,6 +3,7 @@ import {
   ActiveGroupProvider,
   useActiveGroup,
 } from "@/lib/providers/active-group";
+import { RealtimeProvider } from "@/lib/providers/realtime";
 import { SessionProvider, useSession } from "@/lib/providers/session";
 import { AppThemeProvider, useTheme } from "@/lib/providers/theme";
 import { Stack } from "expo-router";
@@ -18,8 +19,10 @@ export default function RootLayout() {
   return (
     <SessionProvider>
       <ActiveGroupProvider>
-        <SplashScreenController />
-        <ThemedRoot />
+        <RealtimeProvider>
+          <SplashScreenController />
+          <ThemedRoot />
+        </RealtimeProvider>
       </ActiveGroupProvider>
     </SessionProvider>
   );

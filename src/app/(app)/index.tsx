@@ -5,6 +5,7 @@ import { DEFAULT_ACCENT, PALETTE, isAccentKey } from "@/constants/palette";
 import { TEMPLATES } from "@/constants/templates";
 import { eventTypeLabel, formatRange } from "@/lib/features/events";
 import { useActiveGroup } from "@/lib/providers/active-group";
+import { useGroupChanges } from "@/lib/providers/realtime";
 import { useTheme } from "@/lib/providers/theme";
 import { supabase } from "@/lib/supabase/client";
 import { router, useFocusEffect } from "expo-router";
@@ -23,27 +24,42 @@ export default function Home() {
   };
   const [requests, setRequests] = useState<EventSummary[]>([]);
   const [upcoming, setUpcoming] = useState<EventSummary[]>([]);
+
+  const loadEvents = useCallback(() => {
+    if (!activeGroup) return;
+    supabase
+      .from("events")
+      .select("id, type, title, starts_at, ends_at")
+      .eq("group_id", activeGroup.id)
+      .eq("status", "proposed")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setRequests(data ?? []));
+    supabase
+      .from("events")
+      .select("id, type, title, starts_at, ends_at")
+      .eq("group_id", activeGroup.id)
+      .eq("status", "confirmed")
+      .gte("ends_at", new Date().toISOString())
+      .order("starts_at")
+      .limit(10)
+      .then(({ data }) => setUpcoming(data ?? []));
+  }, [activeGroup?.id]);
+
   useFocusEffect(
     useCallback(() => {
       refresh();
-      if (!activeGroup) return;
-      supabase
-        .from("events")
-        .select("id, type, title, starts_at, ends_at")
-        .eq("group_id", activeGroup.id)
-        .eq("status", "proposed")
-        .order("created_at", { ascending: false })
-        .then(({ data }) => setRequests(data ?? []));
-      supabase
-        .from("events")
-        .select("id, type, title, starts_at, ends_at")
-        .eq("group_id", activeGroup.id)
-        .eq("status", "confirmed")
-        .gte("ends_at", new Date().toISOString())
-        .order("starts_at")
-        .limit(10)
-        .then(({ data }) => setUpcoming(data ?? []));
-    }, [refresh, activeGroup?.id]),
+      loadEvents();
+    }, [refresh, loadEvents]),
+  );
+
+  useGroupChanges(
+    (change) =>
+      change.group_id === activeGroup?.id &&
+      ["events", "groups", "group_members", "*"].includes(change.table),
+    () => {
+      refresh();
+      loadEvents();
+    },
   );
 
   if (!activeGroup) {
