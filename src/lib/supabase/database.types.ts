@@ -148,6 +148,35 @@ export type Database = {
           },
         ]
       }
+      calendar_feeds: {
+        Row: {
+          created_at: string
+          group_id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          token: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_feeds_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_date_options: {
         Row: {
           created_at: string
@@ -437,6 +466,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calendar_feed: { Args: { p_token: string }; Returns: Json }
       cancel_event: { Args: { p_event_id: string }; Returns: undefined }
       confirm_event: {
         Args: { p_event_id: string; p_option_id: string }
@@ -475,6 +505,7 @@ export type Database = {
         }[]
       }
       join_group: { Args: { p_code: string }; Returns: string }
+      rotate_calendar_feed: { Args: { p_group_id: string }; Returns: string }
       suggest_event_option: {
         Args: { p_ends_at: string; p_event_id: string; p_starts_at: string }
         Returns: string

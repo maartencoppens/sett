@@ -1,3 +1,4 @@
+import { CalendarFeedSection } from "@/components/groups/calendar-feed-section";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
@@ -244,6 +245,7 @@ export default function GroupDetail() {
           ))}
         </View>
       )}
+      <CalendarFeedSection groupId={id} />
 
       <Button title="Leave group" variant="danger" onPress={leave} />
     </ScrollView>
