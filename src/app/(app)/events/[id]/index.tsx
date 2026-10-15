@@ -4,6 +4,7 @@ import { GigSchedule } from "@/components/events/gig-schedule";
 import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { ThemedText } from "@/components/ui/themed-text";
+import { syncDeviceCalendars } from "@/lib/features/device-calendar";
 import { eventTypeLabel, formatRange, overlaps } from "@/lib/features/events";
 import { useGroupModules } from "@/lib/hooks/use-group-modules";
 import { useSession } from "@/lib/providers/session";
@@ -172,6 +173,7 @@ export default function EventScreen() {
             });
             if (error) return Alert.alert("Could not confirm", error.message);
             load();
+            syncDeviceCalendars(me);
           },
         },
       ],
@@ -192,6 +194,7 @@ export default function EventScreen() {
               p_event_id: id,
             });
             if (error) return Alert.alert("Could not cancel", error.message);
+            syncDeviceCalendars(me);
             router.back();
           },
         },

@@ -1,4 +1,5 @@
 import { CalendarFeedSection } from "@/components/groups/calendar-feed-section";
+import { DeviceCalendarToggle } from "@/components/groups/device-calendar-toggle";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
@@ -245,6 +246,8 @@ export default function GroupDetail() {
           ))}
         </View>
       )}
+
+      <DeviceCalendarToggle groupId={id} />
       <CalendarFeedSection groupId={id} />
 
       <Button title="Leave group" variant="danger" onPress={leave} />

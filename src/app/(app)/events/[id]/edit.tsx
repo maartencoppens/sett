@@ -2,7 +2,9 @@ import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { TextField } from "@/components/ui/text-field";
 import { ThemedText } from "@/components/ui/themed-text";
+import { syncDeviceCalendars } from "@/lib/features/device-calendar";
 import { useGroupModules } from "@/lib/hooks/use-group-modules";
+import { useSession } from "@/lib/providers/session";
 import { useTheme } from "@/lib/providers/theme";
 import { supabase } from "@/lib/supabase/client";
 import type { Tables, TablesUpdate } from "@/lib/supabase/database.types";
@@ -33,6 +35,8 @@ export default function EditEvent() {
   const [loadIn, setLoadIn] = useState(todayAt(17));
   const [hasSoundcheck, setHasSoundcheck] = useState(false);
   const [soundcheck, setSoundcheck] = useState(todayAt(18));
+
+  const { session } = useSession();
 
   useEffect(() => {
     supabase
@@ -96,6 +100,7 @@ export default function EditEvent() {
         : error.message;
       return Alert.alert("Could not save", message);
     }
+    syncDeviceCalendars(session!.user.id);
     router.back();
   }
 

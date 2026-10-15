@@ -1,4 +1,5 @@
 import { ThemedText } from "@/components/ui/themed-text";
+import { useDeviceCalendarSync } from "@/lib/hooks/use-device-calendar-sync";
 import { useTheme } from "@/lib/providers/theme";
 import { Link, Stack } from "expo-router";
 
@@ -12,6 +13,8 @@ function ProfileButton() {
 }
 
 export default function AppLayout() {
+  useDeviceCalendarSync();
+
   return (
     <Stack>
       <Stack.Screen

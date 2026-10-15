@@ -64,7 +64,8 @@ export function CalendarFeedSection({ groupId }: { groupId: string }) {
           Calendar
         </ThemedText>
         <ThemedText muted>
-          Show this group's confirmed events in your own calendar app.
+          For other calendar apps, like your laptop or Google Calendar on the
+          web. On this phone, use the switch above instead.
         </ThemedText>
         <Button
           title="Set up calendar feed"
