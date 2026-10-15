@@ -39,6 +39,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      availability_blocks: {
+        Row: {
+          created_at: string
+          end_time: string | null
+          ends_at: string | null
+          id: string
+          label: string | null
+          repeat: string
+          start_time: string | null
+          starts_at: string | null
+          time_zone: string | null
+          until_date: string | null
+          user_id: string
+          weekday: number | null
+        }
+        Insert: {
+          created_at?: string
+          end_time?: string | null
+          ends_at?: string | null
+          id?: string
+          label?: string | null
+          repeat: string
+          start_time?: string | null
+          starts_at?: string | null
+          time_zone?: string | null
+          until_date?: string | null
+          user_id?: string
+          weekday?: number | null
+        }
+        Update: {
+          created_at?: string
+          end_time?: string | null
+          ends_at?: string | null
+          id?: string
+          label?: string | null
+          repeat?: string
+          start_time?: string | null
+          starts_at?: string | null
+          time_zone?: string | null
+          until_date?: string | null
+          user_id?: string
+          weekday?: number | null
+        }
+        Relationships: []
+      }
       group_members: {
         Row: {
           group_id: string
@@ -207,6 +252,14 @@ export type Database = {
           group_id: string
           group_name: string
           template: string
+        }[]
+      }
+      group_busy: {
+        Args: { p_from: string; p_group_id: string; p_to: string }
+        Returns: {
+          ends_at: string
+          starts_at: string
+          user_id: string
         }[]
       }
       join_group: { Args: { p_code: string }; Returns: string }

@@ -29,6 +29,14 @@ export default function AppLayout() {
         options={{ title: "Join a group", presentation: "modal" }}
       />
       <Stack.Screen name="join/[code]" options={{ title: "Join a group" }} />
+      <Stack.Screen
+        name="availability/index"
+        options={{ title: "My availability" }}
+      />
+      <Stack.Screen
+        name="availability/new"
+        options={{ title: "Add busy time", presentation: "modal" }}
+      />
     </Stack>
   );
 }

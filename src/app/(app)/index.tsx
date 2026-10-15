@@ -81,7 +81,11 @@ export default function Home() {
         variant="secondary"
         onPress={() => router.push(`/groups/${activeGroup.id}`)}
       />
-
+      <Button
+        title="My availability"
+        variant="secondary"
+        onPress={() => router.push("/availability")}
+      />
       {others.length > 0 && (
         <View style={{ gap: 4 }}>
           <ThemedText muted style={{ fontSize: 14, fontWeight: "600" }}>
