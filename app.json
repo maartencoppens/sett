@@ -8,9 +8,11 @@
     "scheme": "sett",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "be.maartencoppens.sett",
       "icon": "./assets/expo.icon"
     },
     "android": {
+      "package": "be.maartencoppens.sett",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
