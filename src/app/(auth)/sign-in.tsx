@@ -1,16 +1,21 @@
+import { Button } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
+import { ThemedText } from "@/components/ui/themed-text";
 import { supabase } from "@/lib/supabase";
-import { useState } from "react";
+import { useTheme, type Theme } from "@/lib/theme";
+import { useMemo, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
 } from "react-native";
 
 export default function SignIn() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,14 +34,13 @@ export default function SignIn() {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
-        options: { data: { display_name: name.trim() } }, // picked up by the profile trigger
+        options: { data: { display_name: name.trim() } },
       });
       if (error) Alert.alert("Sign up failed", error.message);
       else if (!data.session)
         Alert.alert("Check your email to confirm your account.");
     }
     setLoading(false);
-    // No router.push: the session changes and Stack.Protected switches screens.
   }
 
   return (
@@ -44,11 +48,10 @@ export default function SignIn() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text style={styles.title}>Sett</Text>
+      <ThemedText style={styles.title}>Sett</ThemedText>
 
       {mode === "sign-up" && (
-        <TextInput
-          style={styles.input}
+        <TextField
           placeholder="Your name"
           value={name}
           onChangeText={setName}
@@ -56,8 +59,7 @@ export default function SignIn() {
           textContentType="name"
         />
       )}
-      <TextInput
-        style={styles.input}
+      <TextField
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
@@ -66,8 +68,7 @@ export default function SignIn() {
         autoComplete="email"
         textContentType="emailAddress"
       />
-      <TextInput
-        style={styles.input}
+      <TextField
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
@@ -76,45 +77,40 @@ export default function SignIn() {
         textContentType={mode === "sign-in" ? "password" : "newPassword"}
       />
 
-      <Pressable
-        style={[styles.button, loading && { opacity: 0.5 }]}
+      <Button
+        title={mode === "sign-in" ? "Sign in" : "Create account"}
         onPress={submit}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {mode === "sign-in" ? "Sign in" : "Create account"}
-        </Text>
-      </Pressable>
+        loading={loading}
+      />
 
       <Pressable
         onPress={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
+        accessibilityRole="button"
       >
-        <Text style={styles.switch}>
+        <ThemedText style={styles.switch}>
           {mode === "sign-in"
             ? "No account yet? Sign up"
             : "Already have an account? Sign in"}
-        </Text>
+        </ThemedText>
       </Pressable>
     </KeyboardAvoidingView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", padding: 24, gap: 12 },
-  title: { fontSize: 32, fontWeight: "700", marginBottom: 12 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: "#222",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  switch: { textAlign: "center", marginTop: 8, color: "#555" },
-});
+const createStyles = (colors: Theme["colors"]) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      justifyContent: "center",
+      padding: 24,
+      gap: 12,
+      backgroundColor: colors.background,
+    },
+    title: {
+      fontSize: 32,
+      fontWeight: "700",
+      marginBottom: 12,
+      color: colors.accent,
+    },
+    switch: { textAlign: "center", marginTop: 8, color: colors.textMuted },
+  });

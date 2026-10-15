@@ -1,71 +1,121 @@
-import { useSession } from "@/lib/auth-context";
-import { supabase } from "@/lib/supabase";
-import { Link, useFocusEffect } from "expo-router";
-import { useCallback, useState } from "react";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { Button } from "@/components/ui/button";
+import { ThemedText } from "@/components/ui/themed-text";
+import { DEFAULT_ACCENT, PALETTE, isAccentKey } from "@/constants/palette";
+import { TEMPLATES } from "@/constants/templates";
+import { useActiveGroup } from "@/lib/active-group";
+import { useTheme } from "@/lib/theme";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 
 export default function Home() {
-  const { session } = useSession();
-  const [name, setName] = useState<string | null>(null);
-  type GroupRow = { id: string; name: string; template: string };
-  const [groups, setGroups] = useState<GroupRow[]>([]);
-  // Runs every time this screen comes back into view, not just on mount
+  const { colors, scheme } = useTheme();
+  const { groups, activeGroup, setActiveGroup, refresh } = useActiveGroup();
+
   useFocusEffect(
     useCallback(() => {
-      if (!session) return;
-      supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", session.user.id)
-        .single()
-        .then(({ data }) => setName(data?.display_name ?? null));
-      supabase
-        .from("groups")
-        .select("id, name, template")
-        .is("archived_at", null)
-        .order("created_at")
-        .then(({ data }) => setGroups(data ?? []));
-    }, [session]),
+      refresh();
+    }, [refresh]),
   );
 
+  if (!activeGroup) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", padding: 24, gap: 12 }}>
+        <ThemedText
+          style={{ fontSize: 22, fontWeight: "700", textAlign: "center" }}
+        >
+          You're not in a group yet
+        </ThemedText>
+        <Button
+          title="Create a group"
+          onPress={() => router.push("/groups/new")}
+        />
+        <Button
+          title="Join with a code"
+          variant="secondary"
+          onPress={() => router.push("/join")}
+        />
+      </View>
+    );
+  }
+
+  const templateLabel = TEMPLATES.find(
+    (t) => t.key === activeGroup.template,
+  )?.label;
+  const others = groups.filter((g) => g.id !== activeGroup.id);
+
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 16,
-      }}
-    >
-      <Text style={{ fontSize: 22 }}>Welcome, {name ?? "…"}</Text>
-      <Link href="/profile" style={{ color: "#06c", fontSize: 16 }}>
-        Edit profile
-      </Link>
-      <Pressable onPress={() => supabase.auth.signOut()}>
-        <Text style={{ color: "#c00" }}>Sign out</Text>
-      </Pressable>
-      <FlatList
-        data={groups}
-        keyExtractor={(g) => g.id}
-        renderItem={({ item }) => (
-          <Link
-            href={`/groups/${item.id}`}
-            style={{ fontSize: 18, paddingVertical: 6 }}
-          >
-            {item.name} <Text style={{ color: "#888" }}>· {item.template}</Text>
-          </Link>
-        )}
-        ListEmptyComponent={
-          <Text style={{ color: "#888" }}>No groups yet</Text>
-        }
-        style={{ flexGrow: 0 }}
+    <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
+      <View
+        style={{
+          backgroundColor: colors.accent,
+          borderRadius: 16,
+          padding: 20,
+          gap: 4,
+        }}
+      >
+        <ThemedText style={{ color: colors.onAccent, opacity: 0.8 }}>
+          {templateLabel}
+        </ThemedText>
+        <ThemedText
+          style={{ color: colors.onAccent, fontSize: 28, fontWeight: "700" }}
+        >
+          {activeGroup.name}
+        </ThemedText>
+      </View>
+
+      <Button
+        title="Members & settings"
+        variant="secondary"
+        onPress={() => router.push(`/groups/${activeGroup.id}`)}
       />
-      <Link href="/groups/new" style={{ color: "#06c", fontSize: 16 }}>
-        + New group
-      </Link>
-      <Link href="/join" style={{ color: "#06c", fontSize: 16 }}>
-        Join with a code
-      </Link>
-    </View>
+
+      {others.length > 0 && (
+        <View style={{ gap: 4 }}>
+          <ThemedText muted style={{ fontSize: 14, fontWeight: "600" }}>
+            Switch group
+          </ThemedText>
+          {others.map((g) => {
+            const key = isAccentKey(g.accent_color)
+              ? g.accent_color
+              : DEFAULT_ACCENT;
+            return (
+              <Pressable
+                key={g.id}
+                onPress={() => setActiveGroup(g.id)}
+                accessibilityRole="button"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingVertical: 10,
+                }}
+              >
+                <View
+                  style={{
+                    width: 14,
+                    height: 14,
+                    borderRadius: 7,
+                    backgroundColor: PALETTE[key][scheme],
+                  }}
+                />
+                <ThemedText>{g.name}</ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+
+      <Button
+        title="+ New group"
+        variant="secondary"
+        onPress={() => router.push("/groups/new")}
+      />
+      <Button
+        title="Join with a code"
+        variant="secondary"
+        onPress={() => router.push("/join")}
+      />
+    </ScrollView>
   );
 }

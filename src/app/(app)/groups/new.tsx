@@ -1,30 +1,39 @@
+import { Button } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
+import { ThemedText } from "@/components/ui/themed-text";
 import { TEMPLATES, type TemplateKey } from "@/constants/templates";
+import { useActiveGroup } from "@/lib/active-group";
 import { supabase } from "@/lib/supabase";
+import { useTheme, type Theme } from "@/lib/theme";
 import { router } from "expo-router";
-import { useState } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-} from "react-native";
+import { useMemo, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet } from "react-native";
 
 export default function NewGroup() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { refresh, setActiveGroup } = useActiveGroup();
+
   const [name, setName] = useState("");
   const [template, setTemplate] = useState<TemplateKey>("band");
   const [saving, setSaving] = useState(false);
 
   async function create() {
     if (!name.trim()) return Alert.alert("Give your group a name");
+
     setSaving(true);
-    const { error } = await supabase.rpc("create_group", {
+    const { data: groupId, error } = await supabase.rpc("create_group", {
       p_name: name.trim(),
       p_template: template,
     });
+    if (error) {
+      setSaving(false);
+      return Alert.alert("Could not create group", error.message);
+    }
+
+    await refresh(); // first load the new group into the list…
+    setActiveGroup(groupId); // …then make it active
     setSaving(false);
-    if (error) return Alert.alert("Could not create group", error.message);
     router.back();
   }
 
@@ -33,9 +42,10 @@ export default function NewGroup() {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        style={styles.input}
+      <ThemedText muted style={styles.label}>
+        Name
+      </ThemedText>
+      <TextField
         value={name}
         onChangeText={setName}
         placeholder="e.g. The Basement Sessions"
@@ -43,7 +53,9 @@ export default function NewGroup() {
         autoFocus
       />
 
-      <Text style={styles.label}>What kind of group?</Text>
+      <ThemedText muted style={styles.label}>
+        What kind of group?
+      </ThemedText>
       {TEMPLATES.map((t) => {
         const selected = t.key === template;
         return (
@@ -54,51 +66,29 @@ export default function NewGroup() {
             accessibilityRole="radio"
             accessibilityState={{ selected }}
           >
-            <Text style={styles.optionTitle}>{t.label}</Text>
-            <Text style={styles.optionText}>{t.description}</Text>
+            <ThemedText style={styles.optionTitle}>{t.label}</ThemedText>
+            <ThemedText muted>{t.description}</ThemedText>
           </Pressable>
         );
       })}
 
-      <Pressable
-        style={[styles.button, saving && { opacity: 0.5 }]}
-        onPress={create}
-        disabled={saving}
-      >
-        <Text style={styles.buttonText}>
-          {saving ? "Creating…" : "Create group"}
-        </Text>
-      </Pressable>
+      <Button title="Create group" onPress={create} loading={saving} />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 24, gap: 12 },
-  label: { fontSize: 14, fontWeight: "600", color: "#555", marginTop: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  option: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 12,
-    padding: 14,
-    gap: 2,
-  },
-  optionSelected: { borderColor: "#222", borderWidth: 2 },
-  optionTitle: { fontSize: 16, fontWeight: "600" },
-  optionText: { color: "#666" },
-  button: {
-    backgroundColor: "#222",
-    borderRadius: 8,
-    padding: 14,
-    alignItems: "center",
-    marginTop: 16,
-  },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-});
+const createStyles = (colors: Theme["colors"]) =>
+  StyleSheet.create({
+    container: { padding: 24, gap: 12 },
+    label: { fontSize: 14, fontWeight: "600", marginTop: 8 },
+    option: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      borderRadius: 12,
+      padding: 14,
+      gap: 2,
+    },
+    optionSelected: { borderColor: colors.accent, borderWidth: 2 },
+    optionTitle: { fontWeight: "600" },
+  });

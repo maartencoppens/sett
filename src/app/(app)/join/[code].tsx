@@ -1,8 +1,12 @@
+import { Button } from "@/components/ui/button";
+import { ThemedText } from "@/components/ui/themed-text";
 import { TEMPLATES } from "@/constants/templates";
+import { useActiveGroup } from "@/lib/active-group";
 import { supabase } from "@/lib/supabase";
+import { useTheme } from "@/lib/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";
 
 type Invite = {
   group_id: string;
@@ -13,6 +17,9 @@ type Invite = {
 
 export default function Join() {
   const { code } = useLocalSearchParams<{ code: string }>();
+  const { refresh, setActiveGroup } = useActiveGroup();
+  const { colors } = useTheme();
+
   const [invite, setInvite] = useState<Invite | null | undefined>(undefined); // undefined = loading
   const [joining, setJoining] = useState(false);
 
@@ -27,26 +34,30 @@ export default function Join() {
     const { data: groupId, error } = await supabase.rpc("join_group", {
       p_code: code,
     });
+    if (error) {
+      setJoining(false);
+      return Alert.alert("Could not join", error.message);
+    }
+    await refresh();
+    setActiveGroup(groupId);
     setJoining(false);
-    if (error) return Alert.alert("Could not join", error.message);
     router.replace(`/groups/${groupId}`);
   }
 
-  if (invite === undefined) return <ActivityIndicator style={{ flex: 1 }} />;
+  function open() {
+    setActiveGroup(invite!.group_id);
+    router.replace(`/groups/${invite!.group_id}`);
+  }
+
+  if (invite === undefined)
+    return <ActivityIndicator style={{ flex: 1 }} color={colors.accent} />;
 
   if (invite === null) {
     return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 24,
-        }}
-      >
-        <Text style={{ fontSize: 17, textAlign: "center" }}>
+      <View style={styles.centered}>
+        <ThemedText style={styles.message}>
           This invite is invalid or has expired.
-        </Text>
+        </ThemedText>
       </View>
     );
   }
@@ -55,42 +66,29 @@ export default function Join() {
     TEMPLATES.find((t) => t.key === invite.template)?.label ?? invite.template;
 
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
-        gap: 16,
-      }}
-    >
-      <Text style={{ color: "#888" }}>{templateLabel}</Text>
-      <Text style={{ fontSize: 26, fontWeight: "700", textAlign: "center" }}>
-        {invite.group_name}
-      </Text>
-      <Pressable
-        onPress={
-          invite.already_member
-            ? () => router.replace(`/groups/${invite.group_id}`)
-            : join
-        }
-        disabled={joining}
-        style={{
-          backgroundColor: "#222",
-          borderRadius: 8,
-          paddingVertical: 14,
-          paddingHorizontal: 32,
-          opacity: joining ? 0.5 : 1,
-        }}
-      >
-        <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-          {invite.already_member
-            ? "Open group"
-            : joining
-              ? "Joining…"
-              : "Join group"}
-        </Text>
-      </Pressable>
+    <View style={styles.centered}>
+      <ThemedText muted>{templateLabel}</ThemedText>
+      <ThemedText style={styles.groupName}>{invite.group_name}</ThemedText>
+      <View style={styles.action}>
+        <Button
+          title={invite.already_member ? "Open group" : "Join group"}
+          onPress={invite.already_member ? open : join}
+          loading={joining}
+        />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+    gap: 16,
+  },
+  message: { fontSize: 17, textAlign: "center" },
+  groupName: { fontSize: 26, fontWeight: "700", textAlign: "center" },
+  action: { alignSelf: "stretch" },
+});

@@ -1,5 +1,10 @@
+import { Button } from "@/components/ui/button";
+import { ThemedText } from "@/components/ui/themed-text";
+import { ACCENT_KEYS, PALETTE, type AccentKey } from "@/constants/palette";
+import { useActiveGroup } from "@/lib/active-group";
 import { useSession } from "@/lib/auth-context";
 import { supabase } from "@/lib/supabase";
+import { useTheme, type Theme } from "@/lib/theme";
 import type { QueryData } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import {
@@ -8,8 +13,15 @@ import {
   useFocusEffect,
   useLocalSearchParams,
 } from "expo-router";
-import { useCallback, useState } from "react";
-import { Alert, FlatList, Pressable, Share, Text, View } from "react-native";
+import { useCallback, useMemo, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  Pressable,
+  Share,
+  StyleSheet,
+  View,
+} from "react-native";
 
 const membersQuery = (groupId: string) =>
   supabase
@@ -23,17 +35,26 @@ type Members = QueryData<ReturnType<typeof membersQuery>>;
 export default function GroupDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { session } = useSession();
+  const { refresh } = useActiveGroup();
+  const { colors, scheme } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [name, setName] = useState("");
+  const [accent, setAccent] = useState<string>("indigo");
   const [members, setMembers] = useState<Members>([]);
 
   useFocusEffect(
     useCallback(() => {
       supabase
         .from("groups")
-        .select("name")
+        .select("name, accent_color")
         .eq("id", id)
         .single()
-        .then(({ data }) => setName(data?.name ?? ""));
+        .then(({ data }) => {
+          if (!data) return;
+          setName(data.name);
+          setAccent(data.accent_color);
+        });
       membersQuery(id).then(({ data, error }) => {
         if (error) console.warn(error.message);
         setMembers(data ?? []);
@@ -57,6 +78,18 @@ export default function GroupDetail() {
     });
   }
 
+  async function pickAccent(key: AccentKey) {
+    const { error } = await supabase
+      .from("groups")
+      .update({ accent_color: key })
+      .eq("id", id)
+      .select("id")
+      .single();
+    if (error) return Alert.alert("Could not change colour", error.message);
+    setAccent(key);
+    refresh(); // the whole app re-themes
+  }
+
   function leave() {
     Alert.alert("Leave group?", `You'll lose access to ${name}.`, [
       { text: "Cancel", style: "cancel" },
@@ -70,6 +103,7 @@ export default function GroupDetail() {
             .eq("group_id", id)
             .eq("user_id", session!.user.id);
           if (error) return Alert.alert("Could not leave", error.message);
+          await refresh(); // active group falls back to another group
           router.back();
         },
       },
@@ -77,27 +111,25 @@ export default function GroupDetail() {
   }
 
   return (
-    <View style={{ flex: 1, padding: 24, gap: 16 }}>
+    <View style={styles.container}>
       <Stack.Screen options={{ title: name || "Group" }} />
 
-      <Text style={{ fontSize: 14, fontWeight: "600", color: "#555" }}>
+      <ThemedText muted style={styles.label}>
         Members
-      </Text>
+      </ThemedText>
       <FlatList
         data={members}
         keyExtractor={(m) => m.user_id}
         renderItem={({ item }) => (
-          <View style={{ paddingVertical: 8 }}>
-            <Text style={{ fontSize: 17 }}>
+          <View style={styles.member}>
+            <ThemedText style={styles.memberName}>
               {item.profiles?.display_name ?? "Unnamed"}
-              {item.role === "admin" && (
-                <Text style={{ color: "#888" }}> · admin</Text>
-              )}
-            </Text>
+              {item.role === "admin" && <ThemedText muted> · admin</ThemedText>}
+            </ThemedText>
             {!!item.profiles?.instruments.length && (
-              <Text style={{ color: "#666" }}>
+              <ThemedText muted>
                 {item.profiles.instruments.join(", ")}
-              </Text>
+              </ThemedText>
             )}
           </View>
         )}
@@ -105,23 +137,47 @@ export default function GroupDetail() {
       />
 
       {isAdmin && (
-        <Pressable
-          onPress={invite}
-          style={{
-            backgroundColor: "#222",
-            borderRadius: 8,
-            padding: 14,
-            alignItems: "center",
-          }}
-        >
-          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-            Invite someone
-          </Text>
-        </Pressable>
+        <>
+          <ThemedText muted style={styles.label}>
+            Group colour
+          </ThemedText>
+          <View style={styles.swatches}>
+            {ACCENT_KEYS.map((key) => (
+              <Pressable
+                key={key}
+                onPress={() => pickAccent(key)}
+                accessibilityRole="radio"
+                accessibilityLabel={PALETTE[key].label}
+                accessibilityState={{ selected: accent === key }}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: PALETTE[key][scheme] },
+                  accent === key && styles.swatchSelected,
+                ]}
+              />
+            ))}
+          </View>
+
+          <Button title="Invite someone" onPress={invite} />
+        </>
       )}
-      <Pressable onPress={leave}>
-        <Text style={{ color: "#c00", textAlign: "center" }}>Leave group</Text>
-      </Pressable>
+
+      <Button title="Leave group" variant="danger" onPress={leave} />
     </View>
   );
 }
+
+const createStyles = (colors: Theme["colors"]) =>
+  StyleSheet.create({
+    container: { flex: 1, padding: 24, gap: 16 },
+    label: { fontSize: 14, fontWeight: "600" },
+    member: {
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    memberName: { fontSize: 17 },
+    swatches: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+    swatch: { width: 40, height: 40, borderRadius: 20 },
+    swatchSelected: { borderWidth: 3, borderColor: colors.text },
+  });
