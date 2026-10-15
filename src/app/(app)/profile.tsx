@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { ThemedText } from "@/components/ui/themed-text";
 import { INSTRUMENTS } from "@/constants/instruments";
-import { useSession } from "@/lib/auth-context";
-import { pickSquareImage, uploadImage } from "@/lib/images";
-import { supabase } from "@/lib/supabase";
-import { useTheme, type Theme } from "@/lib/theme";
+import { pickSquareImage, uploadImage } from "@/lib/features/images";
+import { useSession } from "@/lib/providers/session";
+import { useTheme, type Theme } from "@/lib/providers/theme";
+import { supabase } from "@/lib/supabase/client";
 import { router } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {

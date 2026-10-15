@@ -3,20 +3,47 @@ import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
 import { DEFAULT_ACCENT, PALETTE, isAccentKey } from "@/constants/palette";
 import { TEMPLATES } from "@/constants/templates";
-import { useActiveGroup } from "@/lib/active-group";
-import { useTheme } from "@/lib/theme";
+import { eventTypeLabel, formatRange } from "@/lib/features/events";
+import { useActiveGroup } from "@/lib/providers/active-group";
+import { useTheme } from "@/lib/providers/theme";
+import { supabase } from "@/lib/supabase/client";
 import { router, useFocusEffect } from "expo-router";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
 export default function Home() {
   const { colors, scheme } = useTheme();
   const { groups, activeGroup, setActiveGroup, refresh } = useActiveGroup();
-
+  type EventSummary = {
+    id: string;
+    type: string;
+    title: string | null;
+    starts_at: string | null;
+    ends_at: string | null;
+  };
+  const [requests, setRequests] = useState<EventSummary[]>([]);
+  const [upcoming, setUpcoming] = useState<EventSummary[]>([]);
   useFocusEffect(
     useCallback(() => {
       refresh();
-    }, [refresh]),
+      if (!activeGroup) return;
+      supabase
+        .from("events")
+        .select("id, type, title, starts_at, ends_at")
+        .eq("group_id", activeGroup.id)
+        .eq("status", "proposed")
+        .order("created_at", { ascending: false })
+        .then(({ data }) => setRequests(data ?? []));
+      supabase
+        .from("events")
+        .select("id, type, title, starts_at, ends_at")
+        .eq("group_id", activeGroup.id)
+        .eq("status", "confirmed")
+        .gte("ends_at", new Date().toISOString())
+        .order("starts_at")
+        .limit(10)
+        .then(({ data }) => setUpcoming(data ?? []));
+    }, [refresh, activeGroup?.id]),
   );
 
   if (!activeGroup) {
@@ -75,7 +102,53 @@ export default function Home() {
           </ThemedText>
         </View>
       </View>
+      <Button
+        title="+ Propose a date"
+        onPress={() => router.push("/events/new")}
+      />
 
+      {requests.length > 0 && (
+        <View style={{ gap: 4 }}>
+          <ThemedText muted style={{ fontSize: 14, fontWeight: "600" }}>
+            Open requests
+          </ThemedText>
+          {requests.map((e) => (
+            <Pressable
+              key={e.id}
+              onPress={() => router.push(`/events/${e.id}`)}
+              style={{ paddingVertical: 10 }}
+            >
+              <ThemedText>{e.title ?? eventTypeLabel(e.type)}</ThemedText>
+              <ThemedText muted style={{ fontSize: 14 }}>
+                Waiting for answers
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
+      <View style={{ gap: 4 }}>
+        <ThemedText muted style={{ fontSize: 14, fontWeight: "600" }}>
+          Upcoming
+        </ThemedText>
+        {upcoming.length === 0 && (
+          <ThemedText muted>Nothing planned yet</ThemedText>
+        )}
+        {upcoming.map((e) => (
+          <Pressable
+            key={e.id}
+            onPress={() => router.push(`/events/${e.id}`)}
+            style={{ paddingVertical: 10 }}
+          >
+            <ThemedText>{e.title ?? eventTypeLabel(e.type)}</ThemedText>
+            {e.starts_at && e.ends_at && (
+              <ThemedText muted style={{ fontSize: 14 }}>
+                {formatRange(e.starts_at, e.ends_at)}
+              </ThemedText>
+            )}
+          </Pressable>
+        ))}
+      </View>
       <Button
         title="Members & settings"
         variant="secondary"

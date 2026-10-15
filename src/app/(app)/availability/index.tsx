@@ -1,12 +1,12 @@
-import { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { router, useFocusEffect } from "expo-router";
-import type { Tables } from "@/lib/database.types";
-import { supabase } from "@/lib/supabase";
-import { useTheme } from "@/lib/theme";
-import { WEEKDAYS } from "@/lib/availability";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
+import { WEEKDAYS } from "@/lib/features/availability";
+import { useTheme } from "@/lib/providers/theme";
+import { supabase } from "@/lib/supabase/client";
+import type { Tables } from "@/lib/supabase/database.types";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useState } from "react";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 type Block = Tables<"availability_blocks">;
 

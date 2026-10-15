@@ -1,5 +1,5 @@
-import { useActiveGroup } from "@/lib/active-group";
-import { useSession } from "@/lib/auth-context";
+import { useActiveGroup } from "@/lib/providers/active-group";
+import { useSession } from "@/lib/providers/session";
 import { SplashScreen } from "expo-router";
 
 SplashScreen.preventAutoHideAsync();

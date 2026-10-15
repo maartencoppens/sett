@@ -1,5 +1,5 @@
 import { ThemedText } from "@/components/ui/themed-text";
-import { useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/providers/theme";
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from "@react-native-community/datetimepicker";

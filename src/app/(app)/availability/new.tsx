@@ -2,17 +2,16 @@ import { Button } from "@/components/ui/button";
 import { DateTimeField } from "@/components/ui/date-time-field";
 import { TextField } from "@/components/ui/text-field";
 import { ThemedText } from "@/components/ui/themed-text";
+import { WEEKDAYS, deviceTimeZone } from "@/lib/features/availability";
+import { useTheme, type Theme } from "@/lib/providers/theme";
+import { supabase } from "@/lib/supabase/client";
+import type { TablesInsert } from "@/lib/supabase/database.types";
 import {
-  WEEKDAYS,
   combine,
-  deviceTimeZone,
   toDateString,
   toTimeString,
   todayAt,
-} from "@/lib/availability";
-import type { TablesInsert } from "@/lib/database.types";
-import { supabase } from "@/lib/supabase";
-import { useTheme, type Theme } from "@/lib/theme";
+} from "@/lib/utils/dates";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import {

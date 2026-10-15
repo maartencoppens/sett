@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
 import { TEMPLATES } from "@/constants/templates";
-import { useActiveGroup } from "@/lib/active-group";
-import { supabase } from "@/lib/supabase";
-import { useTheme } from "@/lib/theme";
+import { useActiveGroup } from "@/lib/providers/active-group";
+import { useTheme } from "@/lib/providers/theme";
+import { supabase } from "@/lib/supabase/client";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Alert, StyleSheet, View } from "react-native";

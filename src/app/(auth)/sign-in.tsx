@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { ThemedText } from "@/components/ui/themed-text";
-import { supabase } from "@/lib/supabase";
-import { useTheme, type Theme } from "@/lib/theme";
+import { useTheme, type Theme } from "@/lib/providers/theme";
+import { supabase } from "@/lib/supabase/client";
 import { useMemo, useState } from "react";
 import {
   Alert,

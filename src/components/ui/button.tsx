@@ -1,4 +1,4 @@
-import { useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/providers/theme";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 
 type Props = {

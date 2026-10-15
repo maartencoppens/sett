@@ -2,11 +2,11 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
 import { ACCENT_KEYS, PALETTE, type AccentKey } from "@/constants/palette";
-import { useActiveGroup } from "@/lib/active-group";
-import { useSession } from "@/lib/auth-context";
-import { pickSquareImage, uploadImage } from "@/lib/images";
-import { supabase } from "@/lib/supabase";
-import { useTheme, type Theme } from "@/lib/theme";
+import { pickSquareImage, uploadImage } from "@/lib/features/images";
+import { useActiveGroup } from "@/lib/providers/active-group";
+import { useSession } from "@/lib/providers/session";
+import { useTheme, type Theme } from "@/lib/providers/theme";
+import { supabase } from "@/lib/supabase/client";
 import type { QueryData } from "@supabase/supabase-js";
 import * as Linking from "expo-linking";
 import {

@@ -1,5 +1,5 @@
-import { useSession } from "@/lib/auth-context";
-import { supabase } from "@/lib/supabase";
+import { useSession } from "@/lib/providers/session";
+import { supabase } from "@/lib/supabase/client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,

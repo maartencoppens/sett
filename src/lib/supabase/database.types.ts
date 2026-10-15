@@ -39,6 +39,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          event_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          status: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          event_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       availability_blocks: {
         Row: {
           created_at: string
@@ -83,6 +112,174 @@ export type Database = {
           weekday?: number | null
         }
         Relationships: []
+      }
+      bring_items: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string | null
+          event_id: string
+          id: string
+          label: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          id?: string
+          label: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bring_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_date_options: {
+        Row: {
+          created_at: string
+          ends_at: string
+          event_id: string
+          id: string
+          starts_at: string
+          suggested_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          ends_at: string
+          event_id: string
+          id?: string
+          starts_at: string
+          suggested_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string
+          event_id?: string
+          id?: string
+          starts_at?: string
+          suggested_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_date_options_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_responses: {
+        Row: {
+          option_id: string
+          response: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          option_id: string
+          response: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          option_id?: string
+          response?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_responses_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "event_date_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          address: string | null
+          confirmed_option_id: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          group_id: string
+          id: string
+          load_in_at: string | null
+          notes: string | null
+          soundcheck_at: string | null
+          starts_at: string | null
+          status: string
+          title: string | null
+          type: string
+          venue: string | null
+        }
+        Insert: {
+          address?: string | null
+          confirmed_option_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          group_id: string
+          id?: string
+          load_in_at?: string | null
+          notes?: string | null
+          soundcheck_at?: string | null
+          starts_at?: string | null
+          status?: string
+          title?: string | null
+          type: string
+          venue?: string | null
+        }
+        Update: {
+          address?: string | null
+          confirmed_option_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          group_id?: string
+          id?: string
+          load_in_at?: string | null
+          notes?: string | null
+          soundcheck_at?: string | null
+          starts_at?: string | null
+          status?: string
+          title?: string | null
+          type?: string
+          venue?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_confirmed_option_fkey"
+            columns: ["confirmed_option_id"]
+            isOneToOne: false
+            referencedRelation: "event_date_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       group_members: {
         Row: {
@@ -240,6 +437,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_event: { Args: { p_event_id: string }; Returns: undefined }
+      confirm_event: {
+        Args: { p_event_id: string; p_option_id: string }
+        Returns: undefined
+      }
+      create_event_request: {
+        Args: {
+          p_group_id: string
+          p_notes: string
+          p_options: Json
+          p_title: string
+          p_type: string
+        }
+        Returns: string
+      }
       create_group: {
         Args: { p_name: string; p_template: string }
         Returns: string
@@ -263,6 +475,10 @@ export type Database = {
         }[]
       }
       join_group: { Args: { p_code: string }; Returns: string }
+      suggest_event_option: {
+        Args: { p_ends_at: string; p_event_id: string; p_starts_at: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

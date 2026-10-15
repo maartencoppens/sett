@@ -1,7 +1,10 @@
 import { SplashScreenController } from "@/components/splash-screen-controller";
-import { ActiveGroupProvider, useActiveGroup } from "@/lib/active-group";
-import { SessionProvider, useSession } from "@/lib/auth-context";
-import { AppThemeProvider, useTheme } from "@/lib/theme";
+import {
+  ActiveGroupProvider,
+  useActiveGroup,
+} from "@/lib/providers/active-group";
+import { SessionProvider, useSession } from "@/lib/providers/session";
+import { AppThemeProvider, useTheme } from "@/lib/providers/theme";
 import { Stack } from "expo-router";
 import {
   DarkTheme,

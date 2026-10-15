@@ -1,5 +1,5 @@
 import { ThemedText } from "@/components/ui/themed-text";
-import { useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/providers/theme";
 import { Link, Stack } from "expo-router";
 
 function ProfileButton() {
@@ -37,6 +37,11 @@ export default function AppLayout() {
         name="availability/new"
         options={{ title: "Add busy time", presentation: "modal" }}
       />
+      <Stack.Screen
+        name="events/new"
+        options={{ title: "New request", presentation: "modal" }}
+      />
+      <Stack.Screen name="events/[id]" options={{ title: "Event" }} />
     </Stack>
   );
 }

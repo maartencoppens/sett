@@ -1,6 +1,6 @@
-import type { ImageBucket } from "@/lib/images";
-import { useTheme } from "@/lib/theme";
-import { useSignedUrl } from "@/lib/use-signed-url";
+import type { ImageBucket } from "@/lib/features/images";
+import { useSignedUrl } from "@/lib/hooks/use-signed-url";
+import { useTheme } from "@/lib/providers/theme";
 import { Image } from "expo-image";
 import { Text, View } from "react-native";
 

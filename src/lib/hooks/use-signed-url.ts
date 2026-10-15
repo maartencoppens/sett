@@ -1,5 +1,5 @@
-import type { ImageBucket } from "@/lib/images";
-import { supabase } from "@/lib/supabase";
+import type { ImageBucket } from "@/lib/features/images";
+import { supabase } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
 
 /** Turns a private storage path into a temporary URL (valid 1 hour). */

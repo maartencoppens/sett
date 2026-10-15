@@ -1,4 +1,4 @@
-import { useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/providers/theme";
 import { TextInput, type TextInputProps } from "react-native";
 
 export function TextField({ style, ...props }: TextInputProps) {
