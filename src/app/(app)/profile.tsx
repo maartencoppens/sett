@@ -1,8 +1,10 @@
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { ThemedText } from "@/components/ui/themed-text";
 import { INSTRUMENTS } from "@/constants/instruments";
 import { useSession } from "@/lib/auth-context";
+import { pickSquareImage, uploadImage } from "@/lib/images";
 import { supabase } from "@/lib/supabase";
 import { useTheme, type Theme } from "@/lib/theme";
 import { router } from "expo-router";
@@ -20,17 +22,19 @@ export default function Profile() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { session } = useSession();
-  const userId = session!.user.id; // safe: (app) is only reachable with a session
+  const userId = session!.user.id;
 
   const [name, setName] = useState("");
   const [instruments, setInstruments] = useState<string[]>([]);
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     supabase
       .from("profiles")
-      .select("display_name, instruments")
+      .select("display_name, instruments, avatar_path")
       .eq("id", userId)
       .single()
       .then(({ data, error }) => {
@@ -38,10 +42,39 @@ export default function Profile() {
         if (data) {
           setName(data.display_name ?? "");
           setInstruments(data.instruments);
+          setAvatarPath(data.avatar_path);
         }
         setLoading(false);
       });
   }, [userId]);
+
+  async function changePhoto() {
+    try {
+      const localUri = await pickSquareImage();
+      if (!localUri) return; // user cancelled
+      setUploading(true);
+
+      // 1. upload the new file, 2. point the profile at it, 3. remove the old file
+      const newPath = await uploadImage("avatars", userId, localUri);
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_path: newPath })
+        .eq("id", userId)
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      if (avatarPath) supabase.storage.from("avatars").remove([avatarPath]);
+      setAvatarPath(newPath);
+    } catch (e) {
+      Alert.alert(
+        "Could not upload photo",
+        e instanceof Error ? e.message : String(e),
+      );
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function toggle(instrument: string) {
     setInstruments((current) =>
@@ -76,6 +109,23 @@ export default function Profile() {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
+      <View style={styles.photo}>
+        <Avatar bucket="avatars" path={avatarPath} name={name} size={96} />
+        <Pressable
+          onPress={changePhoto}
+          disabled={uploading}
+          accessibilityRole="button"
+        >
+          {uploading ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : (
+            <ThemedText style={{ color: colors.accent }}>
+              {avatarPath ? "Change photo" : "Add photo"}
+            </ThemedText>
+          )}
+        </Pressable>
+      </View>
+
       <ThemedText muted style={styles.label}>
         Name
       </ThemedText>
@@ -126,6 +176,7 @@ export default function Profile() {
 const createStyles = (colors: Theme["colors"]) =>
   StyleSheet.create({
     container: { padding: 24, gap: 12 },
+    photo: { alignItems: "center", gap: 10, marginBottom: 8 },
     label: { fontSize: 14, fontWeight: "600", marginTop: 8 },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
     chip: {

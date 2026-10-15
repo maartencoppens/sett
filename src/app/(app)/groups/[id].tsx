@@ -1,8 +1,10 @@
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
 import { ACCENT_KEYS, PALETTE, type AccentKey } from "@/constants/palette";
 import { useActiveGroup } from "@/lib/active-group";
 import { useSession } from "@/lib/auth-context";
+import { pickSquareImage, uploadImage } from "@/lib/images";
 import { supabase } from "@/lib/supabase";
 import { useTheme, type Theme } from "@/lib/theme";
 import type { QueryData } from "@supabase/supabase-js";
@@ -15,6 +17,7 @@ import {
 } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Pressable,
@@ -26,7 +29,7 @@ import {
 const membersQuery = (groupId: string) =>
   supabase
     .from("group_members")
-    .select("user_id, role, profiles(display_name, instruments)")
+    .select("user_id, role, profiles(display_name, instruments, avatar_path)")
     .eq("group_id", groupId)
     .order("joined_at");
 
@@ -43,17 +46,21 @@ export default function GroupDetail() {
   const [accent, setAccent] = useState<string>("indigo");
   const [members, setMembers] = useState<Members>([]);
 
+  const [logoPath, setLogoPath] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       supabase
         .from("groups")
-        .select("name, accent_color")
+        .select("name, accent_color, logo_path")
         .eq("id", id)
         .single()
         .then(({ data }) => {
           if (!data) return;
           setName(data.name);
           setAccent(data.accent_color);
+          setLogoPath(data.logo_path);
         });
       membersQuery(id).then(({ data, error }) => {
         if (error) console.warn(error.message);
@@ -110,10 +117,55 @@ export default function GroupDetail() {
     ]);
   }
 
+  async function changeLogo() {
+    try {
+      const localUri = await pickSquareImage();
+      if (!localUri) return;
+      setUploadingLogo(true);
+
+      const newPath = await uploadImage("group-logos", id, localUri);
+      const { error } = await supabase
+        .from("groups")
+        .update({ logo_path: newPath })
+        .eq("id", id)
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      if (logoPath) supabase.storage.from("group-logos").remove([logoPath]);
+      setLogoPath(newPath);
+      refresh(); // Home shows the new logo
+    } catch (e) {
+      Alert.alert(
+        "Could not upload logo",
+        e instanceof Error ? e.message : String(e),
+      );
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: name || "Group" }} />
-
+      <View style={{ alignItems: "center", gap: 10 }}>
+        <Avatar bucket="group-logos" path={logoPath} name={name} size={88} />
+        {isAdmin && (
+          <Pressable
+            onPress={changeLogo}
+            disabled={uploadingLogo}
+            accessibilityRole="button"
+          >
+            {uploadingLogo ? (
+              <ActivityIndicator color={colors.accent} />
+            ) : (
+              <ThemedText style={{ color: colors.accent }}>
+                {logoPath ? "Change logo" : "Add logo"}
+              </ThemedText>
+            )}
+          </Pressable>
+        )}
+      </View>
       <ThemedText muted style={styles.label}>
         Members
       </ThemedText>
@@ -121,16 +173,30 @@ export default function GroupDetail() {
         data={members}
         keyExtractor={(m) => m.user_id}
         renderItem={({ item }) => (
-          <View style={styles.member}>
-            <ThemedText style={styles.memberName}>
-              {item.profiles?.display_name ?? "Unnamed"}
-              {item.role === "admin" && <ThemedText muted> · admin</ThemedText>}
-            </ThemedText>
-            {!!item.profiles?.instruments.length && (
-              <ThemedText muted>
-                {item.profiles.instruments.join(", ")}
+          <View
+            style={[
+              styles.member,
+              { flexDirection: "row", alignItems: "center", gap: 12 },
+            ]}
+          >
+            <Avatar
+              bucket="avatars"
+              path={item.profiles?.avatar_path}
+              name={item.profiles?.display_name}
+            />
+            <View style={{ flex: 1 }}>
+              <ThemedText style={styles.memberName}>
+                {item.profiles?.display_name ?? "Unnamed"}
+                {item.role === "admin" && (
+                  <ThemedText muted> · admin</ThemedText>
+                )}
               </ThemedText>
-            )}
+              {!!item.profiles?.instruments.length && (
+                <ThemedText muted>
+                  {item.profiles.instruments.join(", ")}
+                </ThemedText>
+              )}
+            </View>
           </View>
         )}
         style={{ flexGrow: 0 }}

@@ -1,3 +1,4 @@
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemedText } from "@/components/ui/themed-text";
 import { DEFAULT_ACCENT, PALETTE, isAccentKey } from "@/constants/palette";
@@ -51,17 +52,28 @@ export default function Home() {
           backgroundColor: colors.accent,
           borderRadius: 16,
           padding: 20,
-          gap: 4,
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 16,
         }}
       >
-        <ThemedText style={{ color: colors.onAccent, opacity: 0.8 }}>
-          {templateLabel}
-        </ThemedText>
-        <ThemedText
-          style={{ color: colors.onAccent, fontSize: 28, fontWeight: "700" }}
-        >
-          {activeGroup.name}
-        </ThemedText>
+        <Avatar
+          bucket="group-logos"
+          path={activeGroup.logo_path}
+          name={activeGroup.name}
+          size={56}
+        />
+        <View style={{ flex: 1, gap: 4 }}>
+          <ThemedText style={{ color: colors.onAccent, opacity: 0.8 }}>
+            {templateLabel}
+          </ThemedText>
+          <ThemedText
+            style={{ color: colors.onAccent, fontSize: 26, fontWeight: "700" }}
+            numberOfLines={2}
+          >
+            {activeGroup.name}
+          </ThemedText>
+        </View>
       </View>
 
       <Button

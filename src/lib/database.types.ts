@@ -105,7 +105,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           id: string
-          logo_url: string | null
+          logo_path: string | null
           name: string
           template: string
         }
@@ -115,7 +115,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          logo_url?: string | null
+          logo_path?: string | null
           name: string
           template: string
         }
@@ -125,7 +125,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           id?: string
-          logo_url?: string | null
+          logo_path?: string | null
           name?: string
           template?: string
         }
@@ -168,21 +168,21 @@ export type Database = {
       }
       profiles: {
         Row: {
-          avatar_url: string | null
+          avatar_path: string | null
           created_at: string
           display_name: string | null
           id: string
           instruments: string[]
         }
         Insert: {
-          avatar_url?: string | null
+          avatar_path?: string | null
           created_at?: string
           display_name?: string | null
           id: string
           instruments?: string[]
         }
         Update: {
-          avatar_url?: string | null
+          avatar_path?: string | null
           created_at?: string
           display_name?: string | null
           id?: string

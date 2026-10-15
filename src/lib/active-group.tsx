@@ -15,7 +15,7 @@ export type GroupSummary = {
   name: string;
   template: string;
   accent_color: string;
-  logo_url: string | null;
+  logo_path: string | null;
 };
 
 type ActiveGroupState = {
@@ -44,7 +44,7 @@ export function ActiveGroupProvider({ children }: PropsWithChildren) {
     if (!userId) return;
     const { data, error } = await supabase
       .from("groups")
-      .select("id, name, template, accent_color, logo_url")
+      .select("id, name, template, accent_color, logo_path")
       .is("archived_at", null)
       .order("created_at");
     if (error) return console.warn(error.message);
